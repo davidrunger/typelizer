@@ -22,7 +22,7 @@ module Typelizer
       writer.call(interfaces, force: force)
 
       interfaces
-    rescue ActiveRecord::NoDatabaseError
+    rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::NoDatabaseError
     end
 
     private
