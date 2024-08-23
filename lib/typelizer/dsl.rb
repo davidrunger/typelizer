@@ -30,8 +30,6 @@ module Typelizer
 
       # save association of serializer to model
       def typelize_from(model)
-        return unless Typelizer.enabled?
-
         define_singleton_method(:_typelizer_model_name) { model }
       end
 
