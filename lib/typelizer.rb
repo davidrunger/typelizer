@@ -21,7 +21,10 @@ require_relative "typelizer/railtie" if defined?(Rails)
 module Typelizer
   class << self
     def enabled?
-      %w[development test].include?(ENV["RAILS_ENV"]) || ENV["TYPELIZER"] == "true"
+      (
+        ENV["TYPELIZER"] == "true" ||
+          %w[development test].include?(ENV["RAILS_ENV"])
+      ) && !ENV.key?("DISABLE_TYPELIZER")
     end
 
     attr_accessor :dirs
