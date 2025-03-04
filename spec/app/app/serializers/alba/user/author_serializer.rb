@@ -3,7 +3,7 @@ module Alba
     class AuthorSerializer < BaseSerializer
       typelize_from ::User
 
-      typelize username: [:string, nullable: true]
+      typelize username: [:string, nullable: true, comment: "Author login handle"]
       attributes :id, :username
 
       has_many :posts, resource: PostSerializer, if: ->(u) { u.posts.any? }
@@ -15,7 +15,10 @@ module Alba
       # typelize typed_avatar: [:string, nullable: true]
       # typelize ["string", "null"]
       # typelize "string | null"
-      typelize :string, nullable: true
+      typelize :string, nullable: true, comment: <<~TXT
+        Typed avatar URL
+        Active user only
+      TXT
       attribute :typed_avatar do
         "https://example.com/avatar.png" if active?
       end

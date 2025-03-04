@@ -4,6 +4,7 @@ require_relative "typelizer/version"
 require_relative "typelizer/config"
 require_relative "typelizer/property"
 require_relative "typelizer/interface"
+require_relative "typelizer/renderer"
 require_relative "typelizer/writer"
 require_relative "typelizer/generator"
 
@@ -15,8 +16,12 @@ require_relative "typelizer/serializer_plugins/alba"
 require_relative "typelizer/serializer_plugins/ams"
 
 require_relative "typelizer/model_plugins/active_record"
+require_relative "typelizer/model_plugins/poro"
+require_relative "typelizer/model_plugins/auto"
 
 require_relative "typelizer/railtie" if defined?(Rails)
+
+require "logger"
 
 module Typelizer
   class << self

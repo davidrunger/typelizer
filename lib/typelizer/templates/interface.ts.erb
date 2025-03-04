@@ -5,22 +5,30 @@ import type {<%= interface.imports.join(", ") %>} from '<%= interface.config.typ
 <%- if interface.root_key -%>
 type <%= interface.name %>Data = {
 <%- interface.properties.each do |property| -%>
-  <%= property %>;
+<%= indent(property) %>;
 <%- end -%>
 }
 
 type <%= interface.name %> = {
   <%= interface.root_key %>: <%= interface.name %>Data;
 <%- interface.meta_fields&.each do |property| -%>
-  <%= property %>;
+<%= indent(property) %>;
 <%- end -%>
 }
 <%- else -%>
 type <%= interface.name %> = {
 <%- interface.properties.each do |property| -%>
-  <%= property %>;
+<%- comment = "" -%>
+<%- comment += property.comment.to_s if interface.config.comments -%>
+<%- comment += "\n@deprecated #{property.deprecated.is_a?(String) ? property.deprecated : ''}" if property.deprecated -%>
+<%= indent("/** #{comment.strip.split("\n").map(&:strip).join("\n * ")} */\n") unless comment.empty? -%>
+<%= indent(property) %>;
 <%- end -%>
 }
 <%- end -%>
 
+<%-if interface.config.verbatim_module_syntax -%>
+export type { <%= interface.name %> };
+<%- else -%>
 export default <%= interface.name %>;
+<%- end -%>

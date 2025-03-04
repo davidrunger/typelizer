@@ -22,25 +22,39 @@ module Typelizer
           :association, :one, :has_one,
           :many, :has_many,
           :attributes, :attribute,
+          :method_added,
           :nested_attribute, :nested,
           :meta
         ]
       end
 
       def typelize_method_transform(method:, name:, binding:, type:, attrs:)
-        return {name => [type, attrs.merge(multi: true)]} if [:many, :has_many].include?(method)
+        if method == :method_added && binding.local_variable_defined?(:method_name)
+          name = binding.local_variable_get(:method_name)
+        end
+
+        if [:many, :has_many].include?(method)
+          return {name => [type, attrs.merge(multi: true)]}
+        end
 
         super
       end
 
       def root_key
-        serializer.new({}).send(:_key)
+        root = serializer.new({}).send(:_key)
+        if !root.nil? && has_transform_key?(serializer) && should_transform_root_key?(serializer)
+          fetch_key(serializer, root)
+        else
+          root
+        end
       end
 
       def meta_fields
         return nil unless serializer._meta
 
         name = serializer._meta.first
+        return nil unless name
+
         [
           build_property(name, name)
         ]
@@ -49,6 +63,12 @@ module Typelizer
       private
 
       def build_property(name, attr, **options)
+        column_name = name
+
+        if has_transform_key?(serializer)
+          name = fetch_key(serializer, name)
+        end
+
         case attr
         when Symbol
           Property.new(
@@ -57,7 +77,7 @@ module Typelizer
             optional: false,
             nullable: false,
             multi: false,
-            column_name: name,
+            column_name: column_name,
             **options
           )
         when Proc
@@ -67,7 +87,7 @@ module Typelizer
             optional: false,
             nullable: false,
             multi: false,
-            column_name: nil,
+            column_name: column_name,
             **options
           )
         when ::Alba::Association
@@ -78,7 +98,7 @@ module Typelizer
             optional: false,
             nullable: false,
             multi: false, # we override this in typelize_method_transform
-            column_name: name,
+            column_name: column_name,
             **options
           )
         when ::Alba::TypedAttribute
@@ -89,7 +109,7 @@ module Typelizer
             # not sure if that's a good default tbh
             nullable: !alba_type.instance_variable_get(:@auto_convert),
             multi: false,
-            column_name: name,
+            column_name: column_name,
             **ts_mapper[alba_type.name.to_s],
             **options
           )
@@ -100,7 +120,7 @@ module Typelizer
             optional: false,
             nullable: false,
             multi: false,
-            column_name: nil,
+            column_name: column_name,
             **options
           )
         when ::Alba::ConditionalAttribute
@@ -108,6 +128,18 @@ module Typelizer
         else
           raise ArgumentError, "Unsupported attribute type: #{attr.class}"
         end
+      end
+
+      def has_transform_key?(serializer)
+        serializer._transform_type != :none
+      end
+
+      def should_transform_root_key?(serializer)
+        serializer._transforming_root_key
+      end
+
+      def fetch_key(serializer, key)
+        ::Alba.transform_key(key, transform_type: serializer._transform_type)
       end
 
       private

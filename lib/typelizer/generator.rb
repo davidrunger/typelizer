@@ -2,8 +2,8 @@
 
 module Typelizer
   class Generator
-    def self.call
-      new.call
+    def self.call(**args)
+      new.call(**args)
     end
 
     def initialize(config = Typelizer::Config)
@@ -16,13 +16,17 @@ module Typelizer
     def call(force: false)
       return unless Typelizer.enabled?
 
-      read_serializers
-
-      interfaces = target_serializers.map(&:typelizer_interface).reject(&:empty?)
       writer.call(interfaces, force: force)
 
       interfaces
     rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::NoDatabaseError
+    end
+
+    def interfaces
+      @interfaces ||= begin
+        read_serializers
+        target_serializers.map(&:typelizer_interface).reject(&:empty?)
+      end
     end
 
     private
@@ -34,8 +38,9 @@ module Typelizer
         raise ArgumentError, "Please ensure all your serializers include Typelizer::DSL." if base_classes.none?
       end
 
-      (base_classes + base_classes.flat_map(&:descendants)).uniq.sort_by(&:name)
+      (base_classes + base_classes.flat_map(&:descendants)).uniq
         .reject { |serializer| Typelizer.reject_class.call(serializer: serializer) }
+        .sort_by(&:name)
     end
 
     def read_serializers(files = nil)

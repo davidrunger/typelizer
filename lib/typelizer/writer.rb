@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "fileutils"
-require "erb"
 
 module Typelizer
   class Writer
@@ -33,7 +32,7 @@ module Typelizer
     end
 
     def write_interface(interface)
-      write_file("#{interface.filename}.ts", interface.inspect) do
+      write_file("#{interface.filename}.ts", interface.fingerprint) do
         render_template("interface.ts.erb", interface: interface)
       end
     end
@@ -54,8 +53,8 @@ module Typelizer
     end
 
     def render_template(template, **context)
-      template_cache[template] ||= ERB.new(File.read(File.join(File.dirname(__FILE__), "templates/#{template}")), trim_mode: "-")
-      template_cache[template].result_with_hash(context)
+      template_cache[template] ||= Renderer.new(template)
+      template_cache[template].call(**context)
     end
 
     def cleanup_output_dir
