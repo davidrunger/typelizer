@@ -29,7 +29,10 @@ module Typelizer
       (
         ENV["TYPELIZER"] == "true" ||
           %w[development test].include?(ENV["RAILS_ENV"])
-      ) && !ENV.key?("DISABLE_TYPELIZER")
+      ) && (
+        !ENV.key?("DISABLE_TYPELIZER") ||
+          ENV['DISABLE_TYPELIZER'] == 'false'
+      )
     end
 
     attr_accessor :dirs
