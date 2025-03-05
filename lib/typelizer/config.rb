@@ -24,30 +24,38 @@ module Typelizer
     :output_dir,
     :types_import_path,
     :types_global,
+    :verbatim_module_syntax,
+    :comments,
     keyword_init: true
   ) do
     class << self
       def instance
         @instance ||= new(
-          serializer_name_mapper: ->(serializer) { serializer.name.ends_with?("Serializer") ? serializer.name.delete_suffix("Serializer") : serializer.name.delete_suffix("Resource") },
+          serializer_name_mapper: ->(serializer) do
+            return "" if serializer.name.nil?
+
+            serializer.name.ends_with?("Serializer") ? serializer.name&.delete_suffix("Serializer") : serializer.name&.delete_suffix("Resource")
+          end,
           serializer_model_mapper: ->(serializer) do
             base_class = serializer_name_mapper.call(serializer)
             Object.const_get(base_class) if Object.const_defined?(base_class)
           end,
 
-          model_plugin: ModelPlugins::ActiveRecord,
+          model_plugin: ModelPlugins::Auto,
           serializer_plugin: SerializerPlugins::Auto,
           plugin_configs: {},
 
           type_mapping: TYPE_MAPPING,
           null_strategy: :nullable,
+          comments: false,
 
           output_dir: js_root.join("types/serializers"),
 
           types_import_path: "@/types",
           types_global: %w[Array Date Record File FileList],
 
-          properties_transformer: nil
+          properties_transformer: nil,
+          verbatim_module_syntax: false
         )
       end
 
@@ -66,7 +74,6 @@ module Typelizer
 
       def method_missing(method, *args, &block)
         return Typelizer.send(method, *args, &block) if Typelizer.respond_to?(method)
-
         instance.send(method, *args, &block)
       end
     end

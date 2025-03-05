@@ -4,12 +4,12 @@ module Typelizer
     # typelize attribute_name: ["string", "Date", optional: true, nullable: true, multi: true]
 
     def self.included(base)
-      Typelizer.base_classes << base.to_s
+      Typelizer.base_classes << base.to_s if base.name
       base.extend(ClassMethods)
     end
 
     def self.extended(base)
-      Typelizer.base_classes << base.to_s
+      Typelizer.base_classes << base.to_s if base.name
       base.extend(ClassMethods)
     end
 
@@ -64,9 +64,11 @@ module Typelizer
 
         unless respond_to?(attribute_name)
           define_singleton_method(attribute_name) do
-            result = instance_variable_get(instance_variable)
+            result = instance_variable_get(instance_variable) || {}
             if superclass.respond_to?(attribute_name)
-              result.merge(superclass.send(attribute_name))
+              result.merge(superclass.send(attribute_name)) do |key, currentdef, supervaldef|
+                supervaldef.merge(currentdef)
+              end
             else
               result
             end

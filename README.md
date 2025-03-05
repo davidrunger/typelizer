@@ -14,6 +14,7 @@ Typelizer is a Ruby gem that automatically generates TypeScript interfaces from 
   - [TypeScript Integration](#typescript-integration)
   - [Manual Generation](#manual-generation)
   - [Automatic Generation in Development](#automatic-generation-in-development)
+  - [Disabling Typelizer](#disabling-typelizer)
 - [Configuration](#configuration)
   - [Global Configuration](#global-configuration)
   - [Config Options](#config-options)
@@ -79,7 +80,32 @@ class PostResource < ApplicationResource
   attribute :author_name do |post|
     post.author.name
   end
+
+  typelize :string, nullable: true, comment: "Author's avatar URL"
+  attribute :avatar do
+    "https://example.com/avatar.png" if active?
+  end
 end
+```
+
+`typelize` can be used with a Hash to specify multiple types at once.
+
+```ruby
+class PostResource < ApplicationResource
+  attributes :id, :title, :body, :published_at
+
+  attribute :author_name do |post|
+    post.author.name
+  end
+
+  typelize author_name: :string, published_at: :string
+end
+```
+
+You can also specify more complex type definitions using a lower-level API:
+
+```ruby
+typelize attribute_name: ["string", "Date", optional: true, nullable: true, multi: true, enum: %w[foo bar], comment: "Attribute description", deprecated: "Use `another_attribute` instead"]
 ```
 
 ### TypeScript Integration
@@ -91,6 +117,7 @@ Typelizer generates TypeScript interfaces in the specified output directory:
 export interface Post {
   id: number;
   title: string;
+  category?: "news" | "article" | "blog" | null;
   body: string;
   published_at: string | null;
   author_name: string;
@@ -156,11 +183,15 @@ See the [Configuration](#configuration) section for more options.
 
 ### Manual Generation
 
-To manually generate TypeScript interfaces:
+To manually generate TypeScript interfaces use one of the following commands:
 
-```
-$ rails typelizer:generate
-```
+```bash
+# Generate new interfaces
+rails typelizer:generate
+
+# Clean output directory and regenerate all interfaces
+rails typelizer:generate:refresh
+````
 
 ### Automatic Generation in Development
 
@@ -169,6 +200,10 @@ When [Listen](https://github.com/guard/listen) is installed, Typelizer automatic
 ```ruby
 Typelizer.listen = false
 ```
+
+### Disabling Typelizer
+
+Sometimes we want to use Typelizer only with manual generation. To disable Typelizer during development, we can set `DISABLE_TYPELIZER` environment variable to `true`. This doesn't affect manual generation.
 
 ## Configuration
 
@@ -202,8 +237,8 @@ Typelizer.configure do |config|
   # Custom transformation for generated properties
   config.properties_transformer = ->(properties) { ... }
 
-  # Plugin for model type inference (default: ModelPlugins::ActiveRecord)
-  config.model_plugin = Typelizer::ModelPlugins::ActiveRecord
+  # Plugin for model type inference (default: ModelPlugins::Auto)
+  config.model_plugin = Typelizer::ModelPlugins::Auto
 
   # Plugin for serializer parsing (default: SerializerPlugins::Auto)
   config.serializer_plugin = Typelizer::SerializerPlugins::Auto
@@ -227,6 +262,14 @@ Typelizer.configure do |config|
   # List of type names that should be considered global in TypeScript
   # (i.e. not prefixed with the import path)
   config.types_global << %w[Array Date Record File FileList]
+
+  # Support TypeScript's Verbatim module syntax option (default: false)
+  # Will change imports and exports of types from default to support this syntax option
+  config.verbatim_module_syntax = false
+
+  # Support comments in generated TypeScript interfaces (default: false)
+  # Will add comments to the generated interfaces
+  config.comments = false
 end
 ```
 
