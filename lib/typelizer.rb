@@ -31,7 +31,7 @@ module Typelizer
           %w[development test].include?(ENV["RAILS_ENV"])
       ) && (
         !ENV.key?("DISABLE_TYPELIZER") ||
-          ENV['DISABLE_TYPELIZER'] == 'false'
+          ENV["DISABLE_TYPELIZER"] == "false"
       )
     end
 
